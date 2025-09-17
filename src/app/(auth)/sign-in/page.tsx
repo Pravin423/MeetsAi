@@ -1,15 +1,23 @@
-import { Card } from "@/components/ui/card";
+
+import { auth } from "@/lib/auth";
 import { SignInViews } from "@/modules/auth/ui/views/sign-in-views";
-import { Sign } from "crypto";
+import { headers } from "next/headers";
+import { redirect } from 'next/navigation';
 
 
-const Page = () => {
-    console.log("SignIn Page rendered");
-    return (
-        <SignInViews />
+const Page = async () => {
+    const session = await auth.api.getSession
+        (
+            {
+                headers: await headers(),
+            }
+        );
 
+    if (!!session) {
+        redirect('/');
+    }
 
-    );
+    return <SignInViews />
 }
 
 export default Page;
