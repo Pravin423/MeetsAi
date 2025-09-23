@@ -3,7 +3,7 @@ import { agents, meetings } from "@/db/schema";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
-import { and, count, desc, eq, getTableColumns, ilike,sql } from "drizzle-orm";
+import { and, count, desc, eq, getTableColumns, ilike, sql } from "drizzle-orm";
 import {
   DEFAULT_PAGE,
   MIN_PAGE_SIZE,
@@ -11,6 +11,7 @@ import {
   DEFAULT_PAGE_SIZE,
 } from "@/constants";
 import { meetingsInsertSchema, meetingsUpdateSchema } from "../schemas";
+import { MeetingStatus } from "../types";
 
 export const meetingsRouter = createTRPCRouter({
   update: protectedProcedure
@@ -32,6 +33,7 @@ export const meetingsRouter = createTRPCRouter({
       }
       return updatedMeeting;
     }),
+
   create: protectedProcedure
     .input(meetingsInsertSchema)
     .mutation(async ({ input, ctx }) => {
@@ -40,7 +42,7 @@ export const meetingsRouter = createTRPCRouter({
         .values({
           ...input,
           userid: ctx.auth.user.id,
-          agentid: input.agentId, // Ensure agentid is provided as per schema
+          agentid: input.agentId, // match schema naming
         })
         .returning();
 
@@ -58,45 +60,57 @@ export const meetingsRouter = createTRPCRouter({
         .where(
           and(eq(meetings.id, input.id), eq(meetings.userid, ctx.auth.user.id))
         );
+
       if (!existingMeeting) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Agent not found" });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Meeting not found" });
       }
 
+      // artificial delay
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      // throw new TRPCError({ code: "BAD_REQUEST" })
 
       return existingMeeting;
     }),
 
   getMany: protectedProcedure
     .input(
-      z
-        .object({
-          page: z.number().default(DEFAULT_PAGE),
-          pageSize: z
-            .number()
-            .min(MIN_PAGE_SIZE)
-            .max(MAX_PAGE_SIZE)
-            .default(DEFAULT_PAGE_SIZE),
-          search: z.string().nullish(),
-        })
-        .default({}) // ✅ allows empty input safely
+      z.object({
+        page: z.number().default(DEFAULT_PAGE),
+        pageSize: z
+          .number()
+          .min(MIN_PAGE_SIZE)
+          .max(MAX_PAGE_SIZE)
+          .default(DEFAULT_PAGE_SIZE),
+        search: z.string().nullish(),
+        agentId: z.string().nullish(),
+        status: z
+          .enum([
+            MeetingStatus.Upcoming,
+            MeetingStatus.Active,
+            MeetingStatus.Processing,
+            MeetingStatus.Cancelled,
+          ])
+          .nullish(),
+      })
     )
     .query(async ({ ctx, input }) => {
-      const { search, page, pageSize } = input;
+      const { search, page, pageSize, status, agentId } = input;
 
       const data = await db
         .select({
           ...getTableColumns(meetings),
-          agent:agents,
-          duration:sql<number>`EXTRACT(EPOCH FROM (ended_at - started_at))`.as ("duration"),
+          agent: agents,
+          duration: sql<number>`EXTRACT(EPOCH FROM (ended_at - started_at))`.as(
+            "duration"
+          ),
         })
         .from(meetings)
-        .innerJoin(agents,eq(meetings.agentid,agents.id))
+        .innerJoin(agents, eq(meetings.agentid, agents.id))
         .where(
           and(
             eq(meetings.userid, ctx.auth.user.id),
-            search ? ilike(meetings.name, `%${search}%`) : undefined
+            search ? ilike(meetings.name, `%${search}%`) : undefined,
+            status ? eq(meetings.status, status) : undefined,
+            agentId ? eq(meetings.agentid, agentId) : undefined
           )
         )
         .orderBy(desc(meetings.createdAt), desc(meetings.id))
@@ -106,11 +120,13 @@ export const meetingsRouter = createTRPCRouter({
       const [total] = await db
         .select({ count: count() })
         .from(meetings)
-        .innerJoin(agents,eq(meetings.agentid,agents.id))
+        .innerJoin(agents, eq(meetings.agentid, agents.id))
         .where(
           and(
             eq(meetings.userid, ctx.auth.user.id),
-            search ? ilike(meetings.name, `%${search}%`) : undefined
+            search ? ilike(meetings.name, `%${search}%`) : undefined,
+            status ? eq(meetings.status, status) : undefined,
+            agentId ? eq(meetings.agentid, agentId) : undefined
           )
         );
 
