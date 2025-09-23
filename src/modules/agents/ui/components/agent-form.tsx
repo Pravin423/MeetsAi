@@ -32,16 +32,26 @@ export const AgentForm = ({
 
     const createAgent = useMutation(
         trpc.agents.create.mutationOptions({
-            onSuccess:async () => {
+            onSuccess: async () => {
                 await queryClient.invalidateQueries(trpc.agents.getMany.queryOptions({}),);
-                if(initialValues?.id){
+               
+                onSuccess?.();
+            },
+            onError: (error) => { toast.error(error.message) },
+        })
+    );
+    const updateAgent = useMutation(
+        trpc.agents.update.mutationOptions({
+            onSuccess: async () => {
+                await queryClient.invalidateQueries(trpc.agents.getMany.queryOptions({}),);
+                if (initialValues?.id) {
                     queryClient.invalidateQueries(
-                        trpc.agents.getOne.queryOptions({id:initialValues.id}),
+                        trpc.agents.getOne.queryOptions({ id: initialValues.id }),
                     )
                 }
                 onSuccess?.();
-             },
-            onError: (error) => {toast.error(error.message) },
+            },
+            onError: (error) => { toast.error(error.message) },
         })
     );
 
@@ -54,11 +64,11 @@ export const AgentForm = ({
     });
 
     const isEdit = !!initialValues?.id;
-    const isPending = createAgent.isPending;
+    const isPending = createAgent.isPending ||updateAgent.isPending;
 
     const onSubmit = (values: z.infer<typeof agentsInsertSchema>) => {
         if (isEdit) {
-            console.log("Todo:updateAgent");
+           updateAgent.mutate({...values ,id:initialValues.id})
         } else {
             createAgent.mutate(values);
         }
@@ -91,19 +101,19 @@ export const AgentForm = ({
                             <FormControl>
                                 <Textarea {...field} placeholder="You are a helpful math assistant that can answer questions and help with assignmnets." />
                             </FormControl>
-                            <FormMessage /> 
+                            <FormMessage />
                         </FormItem>
                     )}
                 />
                 <div className="flex justify-between gap-x-2">
                     {onCancel && (
-                        <Button variant="ghost" disabled={isPending} type="button" onClick={()=>onCancel()}>
+                        <Button variant="ghost" disabled={isPending} type="button" onClick={() => onCancel()}>
                             Cancel
                         </Button>
                     )}
                     <Button disabled={isPending} type="submit">
-                        {isEdit?"Update":"Create"}
-                        
+                        {isEdit ? "Update" : "Create"}
+
                     </Button>
                 </div>
             </form>
