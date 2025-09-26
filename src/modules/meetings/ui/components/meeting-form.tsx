@@ -114,42 +114,46 @@ export const MeetingForm = ({
                             <FormItem>
                                 <FormLabel>Agent</FormLabel>
                                 <FormControl>
-                                    <CommandSelect options={(
-                                        agents.data?.items ?? []
-                                    ).map((agent) => ({
-                                        id: agent.id,
-                                        value: agent.id,
-                                        children: (
-                                            <div className="flex items-center gap-x-2">
-                                                <GeneratedAvatar seed={agent.name} variant="botttsNeutral"
-                                                    className="border size-6" />
-                                                <span>{agent.name}</span>
-                                            </div>
-
-                                        )
-                                    }))}
-                                        onSelect={field.onChange}
+                                    <CommandSelect
+                                        options={(agents.data?.items ?? []).map((agent) => ({
+                                            id: agent.id,
+                                            value: agent.id,   // ✅ must be a string
+                                            children: (
+                                                <div className="flex items-center gap-x-2">
+                                                    <GeneratedAvatar
+                                                        seed={agent.name}
+                                                        variant="botttsNeutral"
+                                                        className="border size-6"
+                                                    />
+                                                    <span>{agent.name}</span>
+                                                </div>
+                                            ),
+                                        }))}
+                                        value={field.value || ""}             // ✅ always string
+                                        onSelect={(val) => field.onChange(val)} // ✅ update correctly
                                         onSearch={setAgentSearch}
-                                        value={field.value}
-                                        placeholder="Select an Agent" isSearchable={false} className={""} />
+                                        placeholder="Select an Agent"
+                                        isSearchable={false}
+                                        className=""
+                                    />
                                 </FormControl>
-                                <FormDescription>
-                                    Not found what you&apos;re looking for?{" "}
-                                    <button
-                                        type="button"
-                                        className="text-primary hover:underline"
-                                        onClick={() => setOpenNewAgentDialog(true)}
-                                    >
-                                        Create new agent
-                                    </button>
-                                </FormDescription>
-
-
-
+                                {!isEdit && (
+                                    <FormDescription>
+                                        Not found what you&apos;re looking for?{" "}
+                                        <button
+                                            type="button"
+                                            className="text-primary hover:underline"
+                                            onClick={() => setOpenNewAgentDialog(true)}
+                                        >
+                                            Create new agent
+                                        </button>
+                                    </FormDescription>
+                                )}
                                 <FormMessage />
                             </FormItem>
                         )}
                     />
+
 
                     <div className="flex justify-between gap-x-2">
                         {onCancel && (

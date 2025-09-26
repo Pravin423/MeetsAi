@@ -1,23 +1,22 @@
 import { HomeView } from "@/modules/home/ui/views/home-view";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { redirect } from 'next/navigation';
+import { redirect } from "next/navigation";
 import { caller } from "@/trpc/server";
 
 const Page = async () => {
-
-  const data = await caller.agents.getMany();
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
   if (!session) {
-    redirect('/sign-in');
+    redirect("/sign-in");
   }
 
-  return (
-    <HomeView />
-  );
+  // Only fetch after auth check
+  const data = await caller.agents.getMany();
+
+  return <HomeView agents={data} />;  
 };
 
 export default Page;
