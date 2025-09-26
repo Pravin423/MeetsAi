@@ -11,8 +11,6 @@ import { MeetingIdView, MeetingIdViewError, MeetingIdViewLoading } from "@/modul
 interface Props {
     params: Promise<{
         meetingId: string;
-
-
     }>;
 }
 

@@ -33,6 +33,7 @@ export const meetingsRouter = createTRPCRouter({
       }
       return updatedMeeting;
     }),
+
   remove: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
@@ -92,9 +93,14 @@ export const meetingsRouter = createTRPCRouter({
       }
 
       // artificial delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
-      return existingMeeting;
+      return {
+        ...existingMeeting,
+        status: (
+          existingMeeting.status as string
+        ).toLowerCase() as MeetingStatus,
+      };
     }),
 
   getMany: protectedProcedure
@@ -114,6 +120,7 @@ export const meetingsRouter = createTRPCRouter({
             MeetingStatus.Active,
             MeetingStatus.Processing,
             MeetingStatus.Cancelled,
+            MeetingStatus.Completed,
           ])
           .nullish(),
       })
@@ -159,7 +166,11 @@ export const meetingsRouter = createTRPCRouter({
       const totalPages = Math.ceil(total.count / pageSize);
 
       return {
-        items: data,
+        items: data.map((m) => ({
+          ...m,
+          status: (m.status as string).toLowerCase() as MeetingStatus,
+        })),
+
         total: total.count,
         totalPages,
       };
