@@ -39,12 +39,7 @@ export const meetingsRouter = createTRPCRouter({
 
     return token;
 
-
-
-
   }),
-
-
 
 
   update: protectedProcedure

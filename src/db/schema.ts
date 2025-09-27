@@ -59,7 +59,7 @@ export const agents=pgTable("agents",{
 
 });
 export const meetingStatus=pgEnum("meeting_status",[
-  "upcoming","active","processing","cancelled",
+  "upcoming","active","processing","cancelled","completed"
 ])
 export const meetings=pgTable("meetings",{
   id:text("id").primaryKey().$defaultFn(()=>nanoid()),
